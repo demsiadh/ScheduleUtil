@@ -1,11 +1,8 @@
 package love.jiahao.util;
 
 import lombok.extern.slf4j.Slf4j;
-import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.data.redis.core.StringRedisTemplate;
 import org.springframework.stereotype.Component;
 
-import javax.annotation.Resource;
 import java.util.concurrent.RejectedExecutionHandler;
 import java.util.concurrent.ThreadPoolExecutor;
 
@@ -19,15 +16,18 @@ import java.util.concurrent.ThreadPoolExecutor;
 @Component
 @Slf4j
 public class ScheduleRejected implements RejectedExecutionHandler {
-    @Autowired
-    private StringRedisTemplate redisTemplate;
 
+    /**
+     * 当线程池满的时候，直接调用队列的put方法来进行阻塞
+     * @param r the runnable task requested to be executed
+     * @param executor the executor attempting to execute this task
+     */
     @Override
     public void rejectedExecution(Runnable r, ThreadPoolExecutor executor) {
         try {
-            redisTemplate.opsForList().leftPush("schedule:rejected", SerializeUtil.serialize(r));
-        } catch (Exception e) {
-            log.error("ScheduleRejected rejectedExecution error:{}", e.getMessage(), e);
+            executor.getQueue().put(r);
+        } catch (InterruptedException e) {
+            // 不会被打断
         }
     }
 }

@@ -37,18 +37,18 @@ public class ScheduledUtil {
     private static final Map<String, Long> TASK_TIME_MAP = new ConcurrentHashMap<>();
     // 快速线程池，用来处理执行时间小于10s的任务（为了区分长任务和短任务）
     private static final ThreadPoolExecutor QUICK_HANDLER_EXECUTOR = new ThreadPoolExecutor(2, 4, 30,
-            TimeUnit.SECONDS, new ScheduleQueue<>(500, Runnable.class),
+            TimeUnit.SECONDS, new ResizeLinkedBlockingQueue<>(500),
             new ThreadFactoryBuilder().setNameFormat("quickHandler-pool-%d").setDaemon(true).build(),
             new ScheduleRejected());
     // 标准线程池，执行长任务，并且在开机时执行所有任务并统计时间
     private static final ThreadPoolExecutor THREAD_POOL_EXECUTOR = new ThreadPoolExecutor(2, 5, 30,
-            TimeUnit.SECONDS, new ScheduleQueue<>(500, Runnable.class),
+            TimeUnit.SECONDS, new ResizeLinkedBlockingQueue<>(500),
             new ThreadFactoryBuilder().setNameFormat("standardHandler-pool-%d").setDaemon(true).build(),
             new ScheduleRejected());
-    public ThreadPoolExecutor getThreadPoolExecutor() {
+    public static ThreadPoolExecutor getThreadPoolExecutor() {
         return THREAD_POOL_EXECUTOR;
     }
-    public ThreadPoolExecutor getQuickHandlerExecutor() {
+    public static ThreadPoolExecutor getQuickHandlerExecutor() {
         return QUICK_HANDLER_EXECUTOR;
     }
     // 消费者
@@ -148,7 +148,7 @@ public class ScheduledUtil {
         void accept(T t, R r);
     }
 
-    private class ScheduledRunnable implements Runnable, Serializable {
+    public class ScheduledRunnable implements Runnable, Serializable {
         private int retryTimes;
         private final String taskId;
         private final Supplier<Boolean> supplier;
